@@ -327,16 +327,13 @@ class MainWin(QMainWindow, Ui_MainWindow):
             if info != '已申请':
                 self.web().apply_product(url)
 
-        def _print():
-            def a():
-                print("当前行号", S.item.row())
-
-            QTimer.singleShot(5000, a)
+        def del_item():
+            self.tableWidget.removeRow(item.row())
 
         menu = QMenu(self)
         ac1 = QAction('查看详情', self, triggered=open_url)
         ac2 = QAction('申请此项', self, triggered=apply_this)
-        ac3 = QAction('打印行号', self, triggered=_print)
+        ac3 = QAction('删除此项', self, triggered=del_item)
         menu.addActions([ac1, ac2, ac3])
         item = self.tableWidget.itemAt(pos)
         if item:
@@ -374,14 +371,19 @@ class MainWin(QMainWindow, Ui_MainWindow):
             cleaned_list = list(filter(lambda x: not any(keyword in x[0] for keyword in keywords), cleaned_list))
 
             self.cur.execute(f"SELECT 商品ID FROM {self.comboBox.currentText()}")
-            product_ids = self.cur.fetchall()
-            product_ids = [p[0] for p in product_ids]
+            all_product_ids = self.cur.fetchall()
+            product_ids = [p[0] for p in all_product_ids]
             # print(product_ids)
+            free = USERS[self.comboBox.currentText()]['isFree']
             for p in cleaned_list:
                 productId = p[7]
                 if productId not in product_ids:
                     # 此操作如果中断需要重新加载数据
-                    self._add_product_to_table(p)
+                    if free:
+                        if p[2] == 0:
+                            self._add_product_to_table(p)
+                    else:
+                        self._add_product_to_table(p)
             self.tableWidget.setSortingEnabled(True)
 
             # 设置价格由大到小排序
@@ -401,7 +403,7 @@ class MainWin(QMainWindow, Ui_MainWindow):
                     for item in items:
                         products.append(item)
                 keyword_filter()
-                # print(len(products))
+
 
     @Slot()
     def _apply_products(self):
